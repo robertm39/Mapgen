@@ -101,7 +101,6 @@ class Tile:
         Return whether the side of this tile indicate by side matches
         the opposite side of the other tile.
         """
-        
         return self.sections[side] == other.sections[OPPOSITES[side]]
 
 class Map:
