@@ -109,3 +109,9 @@ class TileMap:
         self.tiles = dict()
         
         self.disp_function = disp_function
+    
+    def add_tile(self, coords, tile):
+        if coords in self.tiles:
+            raise ValueError('coords in self.tiles: {}'.format(coords))
+        
+        self.tiles[coords] = tile
