@@ -240,3 +240,7 @@ def get_sampler(segment_weights, terrain_weights):
     
     total_count = get_target_total_counts(weights, 1000)
     counts = get_counts_from_weights(weights, total_count)
+    
+    count_func = wrap_dict(counts)
+    
+    return TileSampler(tiles, count_func)

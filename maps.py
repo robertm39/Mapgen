@@ -103,7 +103,7 @@ class Tile:
         """
         return self.sections[side] == other.sections[OPPOSITES[side]]
 
-class Map:
+class TileMap:
     def __init__(self, disp_function):
         
         self.tiles = dict()
