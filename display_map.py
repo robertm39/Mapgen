@@ -38,7 +38,7 @@ class Map:
     A map where each coordinate has a single terrain type.
     """
     def __init__(self, tile_map):
-        squares = dict()
+        self.squares = dict()
         
         self.min_x = float('inf')
         self.max_x = float('-inf')
@@ -66,14 +66,14 @@ class Map:
                 
                 terrain = tile.sections[direction]
                 
-                if not embedded_coords in squares:
-                    squares[embedded_coords] = terrain
+                if not embedded_coords in self.squares:
+                    self.squares[embedded_coords] = terrain
                 else:
-                    if squares[embedded_coords] != terrain:
+                    if self.squares[embedded_coords] != terrain:
                         raise ValueError('mismatched terrains at {}: '
                                          '{}, {}'
                                          .format(embedded_coords,
-                                                 squares[embedded_coords],
+                                                 self.squares[embedded_coords],
                                                  terrain))
     
         self.width = self.max_x - self.min_x + 1
@@ -87,13 +87,15 @@ class Map:
         image = Image.new('RGB', (im_width, im_height), 'white')
         draw = ImageDraw.Draw(image)
         
-        for coords, terrain in self.squares:
+        for coords, terrain in self.squares.items():
             x = (coords.x - self.min_x) * square_size
             y = (coords.y - self.min_y) * square_size
             
             color = colors_from_terrains[terrain]
             
-            draw.rectangle([x, y, x+square_size, y+square_size],
+            draw.rectangle([x, y, x+square_size-1, y+square_size-1],
                            fill=color,
-                           outline=color)
-                    
+                           outline=None,
+                           width=0)
+        
+        return image
