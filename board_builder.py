@@ -49,10 +49,20 @@ class CoordsFromAdjacencies:
         if coords in self.taken_coords:
             raise ValueError('coords already filled: {}'.format(coords))
         
+        #Remove these coords from the adjacency maps
         self.taken_coords.add(coords)
+        if coords in self.adjacencies_from_coords:
+            curr_desc = self.adjacencies_from_coords[coords]
+            self.coords_from_adjacencies[curr_desc].remove(coords)
+            del self.adjacencies_from_coords[coords]
         
+        #Update adjacencies for adjacent coords
         for direction in maps.Direction:
             adj_coords = self.tile_map.in_direction(coords, direction)
+            
+            #These coords already have a tile, so they aren't available
+            if adj_coords in self.taken_coords:
+                continue
             
             #Get the previous description of these coords
             none_desc = maps.Tile(None, None, None, None)
@@ -100,12 +110,16 @@ def desc_from_tile(tile, desc_sections):
         
     if not desc_sections[3]:
         desc.sections[maps.Direction.DOWN] = None
+    
+    return desc
 
 class MapBuilder:
     def __init__(self, tile_map, tile_sampler):
         self.tile_map = tile_map
         self.tile_sampler = tile_sampler
         self.coords_from_adjacencies = CoordsFromAdjacencies(self.tile_map)
+        
+        self.empty = True
         
     def add_tile(self):
         """
@@ -114,6 +128,18 @@ class MapBuilder:
         """
         # get a tile
         tile = self.tile_sampler.random_tile()
+        
+        #If the map is empty, put a tile in the center
+        if self.empty:
+            self.empty = False
+            
+            coords = maps.CoordPair(0, 0)
+            
+            self.tile_map.add_tile(coords, tile)
+            self.coords_from_adjacencies.add_tile(coords, tile)
+            
+            return coords
+        #otherwise, put it adjacent to another tile
         
         # look for places to put the tile, starting with places
         # that have more tiles adjacent
@@ -132,7 +158,7 @@ class MapBuilder:
                 continue
             
             possible_coords = list(possible_coords)
-            coords = random.select(possible_coords)
+            coords = random.choice(possible_coords)
             
             self.tile_map.add_tile(coords, tile)
             self.coords_from_adjacencies.add_tile(coords, tile)

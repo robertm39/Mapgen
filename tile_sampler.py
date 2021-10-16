@@ -38,6 +38,7 @@ def get_segments(tile):
         #If they do match, we're in the same segment
         else:
             segments[-1].size += 1
+        prev = terrain
     
     #If there's only one segment, we're done
     if len(segments) == 1:
@@ -57,7 +58,7 @@ class TerrainWeight:
     """
     The weights for one terrain type.
     """
-    def __init__(self, terrain, weight, segment_weights):
+    def __init__(self, terrain, weight, segment_weights=None):
         self.terrain = terrain
         self.weight = weight
         self.segment_weights = segment_weights
@@ -70,13 +71,14 @@ class TerrainWeight:
         
         #Handle the terrain weight
         for direction in maps.Direction:
-            if tile.sections[direction] == self.direction:
+            if tile.sections[direction] == self.terrain:
                 weight *= self.weight
         
-        #Handle the segment weights
-        for segment in get_segments(tile):
-            if segment.terrain == self.terrain:
-                weight *= self.segment_weights[segment.size - 1]
+        #Handle the segment weights, if any
+        if self.segment_weights is not None:
+            for segment in get_segments(tile):
+                if segment.terrain == self.terrain:
+                    weight *= self.segment_weights[segment.size - 1]
         
         return weight
 
@@ -245,6 +247,9 @@ def get_weighted_sampler(segment_weights, terrain_weights):
     
     total_count = get_target_total_counts(weights, 1000)
     counts = get_counts_from_weights(weights, total_count)
+    
+    # for tile, count in counts.items():
+    #     print('{}: {} times'.format(tile, count))
     
     count_func = wrap_dict(counts)
     

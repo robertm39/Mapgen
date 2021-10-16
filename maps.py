@@ -30,7 +30,7 @@ class CoordPair:
         return self._hash
     
     def __str__(self):
-        return '{}, {}'.format(self.x, self.y)
+        return '({}, {})'.format(self.x, self.y)
     
     __repr__ = __str__
 
@@ -55,26 +55,36 @@ class Tile:
                          Direction.LEFT: left,
                          Direction.DOWN: down}
         
-        self._hash = 17
-        self._hash = (self._hash + hash(right)) * 31
-        self._hash = (self._hash + hash(up)) * 31
-        self._hash = (self._hash + hash(left)) * 31
-        self._hash = (self._hash + hash(down)) * 31
+        # self._hash = 17
+        # self._hash = (self._hash + hash(right)) * 31
+        # self._hash = (self._hash + hash(up)) * 31
+        # self._hash = (self._hash + hash(left)) * 31
+        # self._hash = (self._hash + hash(down)) * 31
     
     def __eq__(self, other):
         if not isinstance(other, Tile):
             return False
         
-        return self.sections == other.sections
+        for direction in Direction:
+            if self.sections[direction] != other.sections[direction]:
+                return False
+        
+        return True
     
     def __neq__(self, other):
         return not(self == other)
     
     def __hash__(self):
-        return self._hash
+        _hash = 17
+        _hash = (_hash + hash(self.sections[Direction.RIGHT])) * 31
+        _hash = (_hash + hash(self.sections[Direction.UP])) * 31
+        _hash = (_hash + hash(self.sections[Direction.LEFT])) * 31
+        _hash = (_hash + hash(self.sections[Direction.DOWN])) * 31
+        
+        return _hash
     
     def __str__(self):
-        return 'R: {}, T: {}, L: {}, B: {}'\
+        return '{} {} {} {}'\
                .format(self.sections[Direction.RIGHT],
                        self.sections[Direction.UP],
                        self.sections[Direction.LEFT],

@@ -71,7 +71,8 @@ def builder_test():
     tile_map = maps.TileMap(maps.boundless_disp)
     
     # Set the terrain types: plains, forest, and water
-    terrains = ('P', 'F', 'W')
+    # terrains = ('P', 'F', 'W')
+    terrains = ('P', 'F')
     
     # Get all the tiles
     tiles = tile_sampler.get_all_tiles(terrains)
@@ -82,7 +83,7 @@ def builder_test():
     # Get a board builder
     builder = board_builder.MapBuilder(tile_map, sampler)
     
-    num_tiles = 9
+    num_tiles = 10000
     
     for _ in range(num_tiles):
         builder.add_tile()
@@ -94,15 +95,72 @@ def builder_test():
     
     plain_map = display_map.Map(tile_map)
     
-    square_size = 30
+    square_size = 3
     map_image = plain_map.get_image(colors_from_terrains, square_size)
     
     display(map_image)
+
+def weighted_builder():
+    # Get a boundless map
+    tile_map = maps.TileMap(maps.boundless_disp)
     
+    # Set the terrain types: plains, forest, and water
+    terrains = ('P', 'F', 'W')
+    # terrains = ('P', 'F')
+    
+    # Get all the tiles
+    tiles = tile_sampler.get_all_tiles(terrains)
+    
+    # Get the weights
+    
+    # Get the segment weights
+    # make full tiles more common, everything else equal
+    segment_weights = tile_sampler.SegmentWeights([1, 1, 1, 4])
+    
+    # Get the terrain weights
+    terrain_weights = dict()
+    
+    # make plains more common
+    plains_weights = tile_sampler.TerrainWeight('P', 1.2)
+    terrain_weights['P'] = plains_weights
+    
+    # make forests less common
+    forest_weights = tile_sampler.TerrainWeight('F', 1)
+    terrain_weights['F'] = forest_weights
+    
+    # make water more common
+    water_weights = tile_sampler.TerrainWeight('W', 1.5, [0.1, 0.1, 0.1, 2])
+    terrain_weights['W'] = water_weights
+    
+    # Get the sampler
+    sampler = tile_sampler.get_weighted_sampler(segment_weights,
+                                                terrain_weights)
+    
+    # Get a board builder
+    builder = board_builder.MapBuilder(tile_map, sampler)
+    
+    num_tiles = 100000
+    
+    for _ in range(num_tiles):
+        builder.add_tile()
+    
+    #Display the map
+    colors_from_terrains = {'P': (239, 222, 103),
+                            'F': (16, 155, 0),
+                            'W': (0, 0, 191)}
+    
+    plain_map = display_map.Map(tile_map)
+    
+    square_size = 1
+    map_image = plain_map.get_image(colors_from_terrains, square_size)
+    
+    display(map_image)
+    map_image.save('gen_map2.png')
     
 def main():
     # adjacency_test()
-    builder_test()
+    # builder_test()
+    weighted_builder()
 
 if __name__ == '__main__':
     main()
