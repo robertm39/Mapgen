@@ -227,7 +227,12 @@ class TileSampler:
         """
         return self.tiles_from_nums[randint(0, self.total_count-1)]
 
-def get_sampler(segment_weights, terrain_weights):
+def get_uniform_sampler(tiles):
+    count_func = lambda x: 1 if x in tiles else 0
+    
+    return TileSampler(tiles, count_func)
+
+def get_weighted_sampler(segment_weights, terrain_weights):
     #Get the terrain types and all the tiles
     terrain_types = set(terrain_weights)
     tiles = get_all_tiles(terrain_types)

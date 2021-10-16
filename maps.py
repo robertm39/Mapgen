@@ -102,16 +102,85 @@ class Tile:
         the opposite side of the other tile.
         """
         return self.sections[side] == other.sections[OPPOSITES[side]]
+    
+    def copy(self):
+        return Tile(self.sections[Direction.RIGHT],
+                    self.sections[Direction.UP],
+                    self.sections[Direction.LEFT],
+                    self.sections[Direction.DOWN])
+
+ADJ_DISPS = {Direction.RIGHT: CoordPair( 1,  0),
+             Direction.UP: CoordPair( 0, -1),
+             Direction.LEFT: CoordPair(-1,  0),
+             Direction.DOWN: CoordPair( 0,  1)}
+
+#Displacement functions
+def boundless_disp(coords, disp):
+    """
+    The displacement for a bound unbounded in both directions.
+    """
+    return CoordPair(coords.x + disp.x, coords.y + disp.y)
+
+def torus_disp(coords, disp, width, height):
+    """
+    The displacement for a toroidal board.
+    """
+    unwrapped = boundless_disp(coords, disp)
+    
+    return CoordPair(unwrapped.x % width, unwrapped.y % height)
+
+def get_torus_disp(width, height):
+    #You can't have a width or a height of one
+    #tiles being adjacent to themselves isn't supported
+    if width <= 1:
+        raise ValueError('width: {}'.format(width))
+        
+    if height <= 1:
+        raise ValueError('width: {}'.format(height))
+    
+    return lambda coords, disp: torus_disp(coords, disp, width, height)
 
 class TileMap:
+    """
+    A map of tiles.
+    """
     def __init__(self, disp_function):
         
         self.tiles = dict()
         
         self.disp_function = disp_function
     
+    def in_direction(self, coords, direction):
+        c_disp = ADJ_DISPS[direction]
+        return self.disp_function(coords, c_disp)
+    
+    def fits(self, coords, tile):
+        #For all the adjacent tiles, check whether this tile matches
+        for direction in ADJ_DISPS:
+            
+            #Get the coordinates in this direction
+            other_coords = self.in_direction(coords, direction)
+            
+            #If there are no coords in that direction, continue
+            if other_coords is None:
+                continue
+            
+            if not other_coords in self.tiles:
+                continue
+            
+            other_tile = self.tiles[other_coords]
+            
+            #It doesn't match
+            if not tile.matches(other_tile, direction):
+                return False
+        
+        return True
+    
     def add_tile(self, coords, tile):
         if coords in self.tiles:
             raise ValueError('coords in self.tiles: {}'.format(coords))
+        
+        if not self.fits(coords, tile):
+            raise ValueError('tile doesn\'t fit: {}, {}'.format(coords, tile))
         
         self.tiles[coords] = tile

@@ -34,7 +34,7 @@ def test_display():
     
     plain_map = display_map.Map(tile_map)
     
-    square_size = 50
+    square_size = 30
     map_image = plain_map.get_image(colors_from_terrains, square_size)
     
     display(map_image)
