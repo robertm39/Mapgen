@@ -139,7 +139,7 @@ def weighted_builder():
     # Get a board builder
     builder = board_builder.MapBuilder(tile_map, sampler)
     
-    num_tiles = 100000
+    num_tiles = 1000000
     
     for _ in range(num_tiles):
         builder.add_tile()
@@ -155,7 +155,7 @@ def weighted_builder():
     map_image = plain_map.get_image(colors_from_terrains, square_size)
     
     display(map_image)
-    map_image.save('gen_map2.png')
+    map_image.save('gen_map3.png')
     
 def main():
     # adjacency_test()
