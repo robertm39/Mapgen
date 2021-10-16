@@ -5,6 +5,8 @@ Created on Sat Oct 16 11:13:47 2021
 @author: rober
 """
 
+import os
+
 from IPython.display import display
 
 import maps
@@ -16,11 +18,11 @@ def adjacency_test():
     #Get a boundless map
     tile_map = maps.TileMap(maps.boundless_disp)
     
-    #Set the terrain types: plains, forest, and water
-    terrains = ('P', 'F', 'W')
+    # #Set the terrain types: plains, forest, and water
+    # terrains = ('P', 'F', 'W')
     
-    #Get all the tiles
-    tiles = tile_sampler.get_all_tiles(terrains)
+    # #Get all the tiles
+    # tiles = tile_sampler.get_all_tiles(terrains)
     
     #Get the adjacency info manager
     coords_from_adjacencies = board_builder.CoordsFromAdjacencies(tile_map)
@@ -101,35 +103,39 @@ def builder_test():
     display(map_image)
 
 def weighted_builder():
+    
+    
     # Get a boundless map
     tile_map = maps.TileMap(maps.boundless_disp)
     
+    #The terrain types are plains, forest, and water
+    
     # Set the terrain types: plains, forest, and water
-    terrains = ('P', 'F', 'W')
+    # terrains = ('P', 'F', 'W')
     # terrains = ('P', 'F')
     
-    # Get all the tiles
-    tiles = tile_sampler.get_all_tiles(terrains)
+    # # Get all the tiles
+    # tiles = tile_sampler.get_all_tiles(terrains)
     
     # Get the weights
     
     # Get the segment weights
     # make full tiles more common, everything else equal
-    segment_weights = tile_sampler.SegmentWeights([1, 1, 1, 4])
+    segment_weights = tile_sampler.SegmentWeights([1, 1, 1, 3])
     
     # Get the terrain weights
     terrain_weights = dict()
     
     # make plains more common
-    plains_weights = tile_sampler.TerrainWeight('P', 1.2)
+    plains_weights = tile_sampler.TerrainWeight('P', 1, [1, 1, 1, 2])
     terrain_weights['P'] = plains_weights
     
     # make forests less common
-    forest_weights = tile_sampler.TerrainWeight('F', 1)
+    forest_weights = tile_sampler.TerrainWeight('F', 1, [1, 1, 1, 2])
     terrain_weights['F'] = forest_weights
     
     # make water more common
-    water_weights = tile_sampler.TerrainWeight('W', 1.5, [0.1, 0.1, 0.1, 2])
+    water_weights = tile_sampler.TerrainWeight('W', 1.6, [0.1, 0.1, 0.1, 3])
     terrain_weights['W'] = water_weights
     
     # Get the sampler
@@ -137,12 +143,19 @@ def weighted_builder():
                                                 terrain_weights)
     
     # Get a board builder
-    builder = board_builder.MapBuilder(tile_map, sampler)
+    builder = board_builder.MapBuilder(tile_map, sampler, favor_adj=True)
     
-    num_tiles = 1000000
+    filename = 'genmap_21.png'
+    if os.path.exists(filename):
+        raise ValueError('file already exists: {}'.format(filename))
     
-    for _ in range(num_tiles):
+    #Ten million tiles
+    num_tiles = 10**7
+    
+    for i in range(num_tiles):
         builder.add_tile()
+        if (i+1) % 100000 == 0:
+            print('{} tiles'.format(i+1))
     
     #Display the map
     colors_from_terrains = {'P': (239, 222, 103),
@@ -154,8 +167,8 @@ def weighted_builder():
     square_size = 1
     map_image = plain_map.get_image(colors_from_terrains, square_size)
     
-    display(map_image)
-    map_image.save('gen_map3.png')
+    # display(map_image)
+    map_image.save(filename)
     
 def main():
     # adjacency_test()

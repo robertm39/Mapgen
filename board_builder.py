@@ -114,10 +114,11 @@ def desc_from_tile(tile, desc_sections):
     return desc
 
 class MapBuilder:
-    def __init__(self, tile_map, tile_sampler):
+    def __init__(self, tile_map, tile_sampler, favor_adj=True):
         self.tile_map = tile_map
         self.tile_sampler = tile_sampler
         self.coords_from_adjacencies = CoordsFromAdjacencies(self.tile_map)
+        self.favor_adj = favor_adj
         
         self.empty = True
         
@@ -143,8 +144,8 @@ class MapBuilder:
         
         # look for places to put the tile, starting with places
         # that have more tiles adjacent
+        possible_coords = set()
         for adj_num in (4, 3, 2, 1):
-            possible_coords = set()
             for adj_desc_template in DESC_FROM_NUM[adj_num]:
                 adj_desc = desc_from_tile(tile, adj_desc_template)
                 
@@ -157,12 +158,25 @@ class MapBuilder:
             if not possible_coords:
                 continue
             
-            possible_coords = list(possible_coords)
-            coords = random.choice(possible_coords)
-            
-            self.tile_map.add_tile(coords, tile)
-            self.coords_from_adjacencies.add_tile(coords, tile)
-            
-            return coords
+            #If we're favoring adjacency, put the tile in now
+            #otherwise, put it in after we've checked all possibilities
+            if self.favor_adj:
+                possible_coords = list(possible_coords)
+                coords = random.choice(possible_coords)
+                
+                self.tile_map.add_tile(coords, tile)
+                self.coords_from_adjacencies.add_tile(coords, tile)
+                
+                return coords
         
+        #If we aren't favoring adjacency, do the selection now
+        if not self.favor_adj:
+            if possible_coords:
+                possible_coords = list(possible_coords)
+                coords = random.choice(possible_coords)
+                
+                self.tile_map.add_tile(coords, tile)
+                self.coords_from_adjacencies.add_tile(coords, tile)
+                
+                return coords
         return False
