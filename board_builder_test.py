@@ -102,21 +102,7 @@ def builder_test():
     
     display(map_image)
 
-def weighted_builder():
-    
-    
-    # Get a boundless map
-    tile_map = maps.TileMap(maps.boundless_disp)
-    
-    #The terrain types are plains, forest, and water
-    
-    # Set the terrain types: plains, forest, and water
-    # terrains = ('P', 'F', 'W')
-    # terrains = ('P', 'F')
-    
-    # # Get all the tiles
-    # tiles = tile_sampler.get_all_tiles(terrains)
-    
+def get_normal_sampler():
     # Get the weights
     
     # Get the segment weights
@@ -141,6 +127,17 @@ def weighted_builder():
     # Get the sampler
     sampler = tile_sampler.get_weighted_sampler(segment_weights,
                                                 terrain_weights)
+    
+    return sampler
+    
+def weighted_builder():
+    
+    
+    # Get a boundless map
+    tile_map = maps.TileMap(maps.boundless_disp)
+    
+    #The terrain types are plains, forest, and water
+    sampler = get_normal_sampler()
     
     # Get a board builder
     builder = board_builder.MapBuilder(tile_map, sampler, favor_adj=True)
@@ -169,7 +166,10 @@ def weighted_builder():
     
     # display(map_image)
     map_image.save(filename)
+
+def swap_builder():
     
+
 def main():
     # adjacency_test()
     # builder_test()

@@ -194,3 +194,6 @@ class TileMap:
             raise ValueError('tile doesn\'t fit: {}, {}'.format(coords, tile))
         
         self.tiles[coords] = tile
+    
+    def at(self, coords):
+        return self.tiles[coords]
