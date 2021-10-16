@@ -84,7 +84,7 @@ class Tile:
         return _hash
     
     def __str__(self):
-        return '{} {} {} {}'\
+        return '({} {} {} {})'\
                .format(self.sections[Direction.RIGHT],
                        self.sections[Direction.UP],
                        self.sections[Direction.LEFT],

@@ -16,11 +16,18 @@ class SwapMapBuilder:
     def __init__(self,
                  half_diag,
                  tile_map,
+                 stop_amount,
                  border_sampler,
                  interior_sampler):
         
         self.half_diag = half_diag
         self.tile_map = tile_map
+        
+        if stop_amount is None:
+            self.stop_amount = round(((half_diag ** 2) * 2) / 16)
+        else:
+            self.stop_amount = stop_amount
+            
         self.border_sampler = border_sampler
         self.interior_sampler = interior_sampler
     
@@ -94,6 +101,10 @@ class SwapMapBuilder:
         tile_1 = self.tiles_from_coords[coords_1]
         tile_2 = self.tiles_from_coords[coords_2]
         
+        #If the tiles are the same, don't do the swap
+        if tile_1 == tile_2:
+            return
+        
         # Swap in tiles_from_coords
         self.tiles_from_coords[coords_1] = tile_2
         self.tiles_from_coords[coords_2] = tile_1
@@ -105,22 +116,55 @@ class SwapMapBuilder:
         self.coords_from_tiles[tile_2].remove(coords_2)
         self.coords_from_tiles[tile_2].add(coords_1)
     
+    def freeze_coords(self, coords):
+        if coords in self.eligible_coords:
+            self.frozen_coords.add(coords)
+            self.eligible_coords.remove(coords)
+            tile = self.tiles_from_coords[coords]
+            self.coords_from_tiles[tile].remove(coords)
+    
+    def get_needed_tile(self, coords):
+        # Figure out what tile we need
+        terrains = list()
+        for direction in maps.Direction:
+            adj_coords = self.tile_map.in_direction(coords, direction)
+            adj_tile = self.tiles_from_coords[adj_coords]
+            terrain = adj_tile.sections[maps.OPPOSITES[direction]]
+            terrains.append(terrain)
+        
+        needed_tile = maps.Tile(*terrains)
+        
+        return needed_tile
+    
     def do_swapping_iteration(self):
         # Get the interior coords in a random order
         shuffled_coords = list(self.eligible_coords)
         random.shuffle(shuffled_coords)
         
+        temp_frozen_coords = set()
+        
         for coords in shuffled_coords:
-            # Figure out what tile we need
-            terrains = list()
-            for direction in maps.Direction:
-                adj_coords = self.tile_map.in_direction(coords, direction)
-                adj_tile = self.tiles_from_coords[adj_coords]
-                terrain = adj_tile.sections[maps.OPPOSITES[direction]]
-                terrains.append(terrain)
+            # if these coords are frozen, skip them
+            if coords in self.frozen_coords:
+                continue
+            if coords in temp_frozen_coords:
+                continue
             
-            needed_tile = maps.Tile(*terrains)
-            coords_at = self.coords_from_tiles(needed_tile)
+            # # Figure out what tile we need
+            # terrains = list()
+            # for direction in maps.Direction:
+            #     adj_coords = self.tile_map.in_direction(coords, direction)
+            #     adj_tile = self.tiles_from_coords[adj_coords]
+            #     terrain = adj_tile.sections[maps.OPPOSITES[direction]]
+            #     terrains.append(terrain)
+            
+            # needed_tile = maps.Tile(*terrains)
+            
+            needed_tile = self.get_needed_tile(coords)
+            coords_at = self.coords_from_tiles.get(needed_tile, set()).copy()
+            
+            #Remove the tile we're on
+            coords_at.discard(coords)
             
             #If none of the tiles work, continue
             if not coords_at:
@@ -132,14 +176,72 @@ class SwapMapBuilder:
             
             self.swap(coords, other_coords)
             
-            # Make this spot ineligible for moving
-            self.frozen_coords.add(coords)
-            self.coords_from_tiles[needed_tile].remove(coords)
-            self.eligible_coords.remove(coords)
+            # Make these coords
+            # (and all adjacent coords, if they themselves aren't
+            #  adjacent to any other frozen coords, besides these)
+            # ineligible for moving
+            self.freeze_coords(coords)
+            for direction in maps.Direction:
+                adj_coords = self.tile_map.in_direction(coords, direction)
+                
+                temp_frozen_coords.add(adj_coords)
+                # self.freeze_coords(adj_coords)
+    
+    def refresh_eligibility(self):
+        self.frozen_coords.clear()
+        self.eligible_coords = self.inner_coords.copy()
+        self.coords_from_tiles.clear()
+        
+        for coords, tile in self.tiles_from_coords.items():
+            self.add_to_coords_from_tiles(coords, tile)
+    
+    def set_tile_at(self, coords, new_tile):
+        tile = self.tiles_from_coords[coords]
+        
+        self.tiles_from_coords[coords] = new_tile
+        self.coords_from_tiles[tile].remove(coords)
+        
+        self.add_to_coords_from_tiles(coords, new_tile)
+    
+    def resample_tiles(self):
+        print('Resampling {} tiles'.format(len(self.eligible_coords)))
+        
+        for coords in self.eligible_coords:
+            # tile = self.tiles_from_coords[coords]
+            new_tile = self.interior_sampler.random_tile()
+            self.set_tile_at(coords, new_tile)
+            
+            # self.tiles_from_coords[coords] = new_tile
+            # self.coords_from_tiles[tile].remove(coords)
+            
+            # self.add_to_coords_from_tiles(coords, new_tile)
+    
+    def fill_in_needed_tiles(self):
+        for coords in self.eligible_coords:
+            new_tile = self.get_needed_tile(coords)
+            self.set_tile_at(coords, new_tile)
     
     def do_swapping_iterations(self):
-        while self.eligible_coords:
+        #Do iterations until nothing happens
+        num_eligible = len(self.eligible_coords)
+        while True:
             self.do_swapping_iteration()
+            
+            new_num_eligible = len(self.eligible_coords)
+            if new_num_eligible == num_eligible:
+                break
+            
+            num_eligible = new_num_eligible
+        
+        # #Make all tiles eligible to move again
+        # self.refresh_eligibility()
+        
+        # Resample the tiles that didn't get frozen if there are enough
+        # otherwise, just put the tiles we need in and call it good
+        if num_eligible > self.stop_amount:
+            self.resample_tiles()
+        else:
+            self.fill_in_needed_tiles()
     
     def make_map(self):
         #Get the initial board
@@ -157,7 +259,7 @@ class SwapMapBuilder:
             done = True
             try:
                 test_map = maps.TileMap(self.tile_map.disp_function)
-                for coords, tile in self.tiles_from_coords:
+                for coords, tile in self.tiles_from_coords.items():
                     test_map.add_tile(coords, tile)
             except ValueError:
                 done = False
@@ -168,4 +270,8 @@ class SwapMapBuilder:
             self.do_swapping_iterations()
             print('{} Iterations'.format(i))
             i += 1
-            
+        
+        #Save what we have to the map
+        for coords, tile in self.tiles_from_coords.items():
+            if coords in self.inner_coords:
+                self.tile_map.add_tile(coords, tile)

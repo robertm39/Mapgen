@@ -234,6 +234,13 @@ def get_uniform_sampler(tiles):
     
     return TileSampler(tiles, count_func)
 
+class OneTileSampler:
+    def __init__(self, tile):
+        self.tile = tile.copy()
+    
+    def random_tile(self):
+        return self.tile.copy()
+
 def get_weighted_sampler(segment_weights, terrain_weights):
     #Get the terrain types and all the tiles
     terrain_types = set(terrain_weights)

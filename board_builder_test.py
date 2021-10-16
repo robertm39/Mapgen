@@ -12,6 +12,8 @@ from IPython.display import display
 import maps
 import tile_sampler
 import board_builder
+import swap_map_builder
+import swap_map_builder_2
 import display_map
 
 def adjacency_test():
@@ -121,7 +123,7 @@ def get_normal_sampler():
     terrain_weights['F'] = forest_weights
     
     # make water more common
-    water_weights = tile_sampler.TerrainWeight('W', 1.6, [0.1, 0.1, 0.1, 3])
+    water_weights = tile_sampler.TerrainWeight('W', 1.2, [0.1, 0.1, 0.1, 3])
     terrain_weights['W'] = water_weights
     
     # Get the sampler
@@ -129,10 +131,8 @@ def get_normal_sampler():
                                                 terrain_weights)
     
     return sampler
-    
+
 def weighted_builder():
-    
-    
     # Get a boundless map
     tile_map = maps.TileMap(maps.boundless_disp)
     
@@ -142,12 +142,11 @@ def weighted_builder():
     # Get a board builder
     builder = board_builder.MapBuilder(tile_map, sampler, favor_adj=True)
     
-    filename = 'genmap_21.png'
+    filename = 'genmap_47.png'
     if os.path.exists(filename):
         raise ValueError('file already exists: {}'.format(filename))
     
-    #Ten million tiles
-    num_tiles = 10**7
+    num_tiles = 10**5
     
     for i in range(num_tiles):
         builder.add_tile()
@@ -168,12 +167,72 @@ def weighted_builder():
     map_image.save(filename)
 
 def swap_builder():
+    tile_map = maps.TileMap(maps.boundless_disp)
     
+    # Surround the map with water
+    border_sampler = tile_sampler.OneTileSampler(maps.Tile(*'WWWW'))
+    sampler = get_normal_sampler()
+    
+    builder = swap_map_builder.SwapMapBuilder(half_diag=300,
+                                              tile_map=tile_map,
+                                              stop_amount=None,
+                                              border_sampler=border_sampler,
+                                              interior_sampler=sampler)
+    
+    filename = 'genmap_35.png'
+    if os.path.exists(filename):
+        raise ValueError('file already exists: {}'.format(filename))
+        
+    builder.make_map()
+    
+    #Display the map
+    colors_from_terrains = {'P': (239, 222, 103),
+                            'F': (16, 155, 0),
+                            'W': (0, 0, 191)}
+    
+    plain_map = display_map.Map(tile_map)
+    
+    square_size = 1
+    map_image = plain_map.get_image(colors_from_terrains, square_size)
+    
+    display(map_image)
+    map_image.save(filename)
+
+def stoch_swap_builder():
+    tile_map = maps.TileMap(maps.boundless_disp)
+    
+    sampler = get_normal_sampler()
+    
+    builder = swap_map_builder_2.StochSwapMapBuilder(half_diag=50,
+                                                     tile_map=tile_map,
+                                                     sampler=sampler,
+                                                     num_swaps=10**5)
+    
+    filename = 'genmap_46.png'
+    if os.path.exists(filename):
+        raise ValueError('file already exists: {}'.format(filename))
+        
+    builder.make_map(10**7)
+    
+    #Display the map
+    colors_from_terrains = {'P': (239, 222, 103),
+                            'F': (16, 155, 0),
+                            'W': (0, 0, 191)}
+    
+    plain_map = display_map.Map(tile_map)
+    
+    square_size = 2
+    map_image = plain_map.get_image(colors_from_terrains, square_size)
+    
+    display(map_image)
+    map_image.save(filename)
 
 def main():
     # adjacency_test()
     # builder_test()
     weighted_builder()
+    # swap_builder()
+    # stoch_swap_builder()
 
 if __name__ == '__main__':
     main()
